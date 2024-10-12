@@ -56,13 +56,14 @@ class HeatmapPredictor(BasePredictor):
         self.locref_std = locref_std
 
     def forward(
-        self, stride: float, outputs: dict[str, torch.Tensor]
+        self, stride: float, outputs: dict[str, torch.Tensor], num_outputs: int = 20
     ) -> dict[str, torch.Tensor]:
         """Forward pass of SinglePredictor. Gets predictions from model output.
 
         Args:
             stride: the stride of the model
             outputs: output of the model heads (heatmap, locref)
+            num_outputs: Number of top values to get. Defaults to 20.
 
         Returns:
             A dictionary containing a "poses" key with the output tensor as value.
@@ -90,7 +91,7 @@ class HeatmapPredictor(BasePredictor):
             )
             locrefs = locrefs * self.locref_std
 
-        poses = self.get_pose_prediction(heatmaps, locrefs, scale_factors)
+        poses = self.get_pose_prediction(heatmaps, locrefs, scale_factors, num_outputs)
 
         if self.clip_scores:
             poses[..., 2] = torch.clip(poses[..., 2], min=0, max=1)
@@ -98,12 +99,13 @@ class HeatmapPredictor(BasePredictor):
         return {"poses": poses}
 
     def get_top_values(
-        self, heatmap: torch.Tensor
+        self, heatmap: torch.Tensor, n_top: int = 20
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Get the top values from the heatmap.
 
         Args:
             heatmap: Heatmap tensor.
+            n_top: Number of top values to get. Defaults to 20.
 
         Returns:
             Y and X indices of the top values.
@@ -115,12 +117,12 @@ class HeatmapPredictor(BasePredictor):
         """
         batchsize, ny, nx, num_joints = heatmap.shape
         heatmap_flat = heatmap.reshape(batchsize, nx * ny, num_joints)
-        heatmap_top = torch.argmax(heatmap_flat, dim=1)
+        _, heatmap_top = torch.topk(heatmap_flat, n_top, dim=1)
         y, x = heatmap_top // nx, heatmap_top % nx
         return y, x
 
     def get_pose_prediction(
-        self, heatmap: torch.Tensor, locref: torch.Tensor | None, scale_factors
+        self, heatmap: torch.Tensor, locref: torch.Tensor | None, scale_factors, num_outputs: int = 20
     ) -> torch.Tensor:
         """Gets the pose prediction given the heatmaps and locref.
 
@@ -128,6 +130,7 @@ class HeatmapPredictor(BasePredictor):
             heatmap: Heatmap tensor with the following format (batch_size, height, width, num_joints)
             locref: Locref tensor with the following format (batch_size, height, width, num_joints, 2)
             scale_factors: Scale factors for the poses.
+            num_outputs: Number of top values to get. Defaults to 20.
 
         Returns:
             Pose predictions of the format: (batch_size, num_people = 1, num_joints, 3)
@@ -139,24 +142,25 @@ class HeatmapPredictor(BasePredictor):
             >>> scale_factors = (0.5, 0.5)
             >>> poses = predictor.get_pose_prediction(heatmap, locref, scale_factors)
         """
-        y, x = self.get_top_values(heatmap)
+        y, x = self.get_top_values(heatmap, n_top=num_outputs)
 
-        batch_size, num_joints = x.shape
+        batch_size, _, _, num_joints = heatmap.shape
 
-        dz = torch.zeros((batch_size, 1, num_joints, 3)).to(x.device)
-        for b in range(batch_size):
-            for j in range(num_joints):
-                dz[b, 0, j, 2] = heatmap[b, y[b, j], x[b, j], j]
-                if locref is not None:
-                    dz[b, 0, j, :2] = locref[b, y[b, j], x[b, j], j, :]
-
-        x, y = torch.unsqueeze(x, 1), torch.unsqueeze(y, 1)
+        # dz = torch.zeros((batch_size, 1, num_joints, 3)).to(x.device)
+        dz = torch.zeros((batch_size, num_outputs, num_joints, 3)).to(x.device)
+        for n in range(num_outputs):
+            for b in range(batch_size):
+                for j in range(num_joints):
+                    dz[b, n, j, 2] = heatmap[b, y[b, n, j], x[b, n, j], j]
+                    if locref is not None:
+                        dz[b, n, j, :2] = locref[b, y[b, n, j], x[b, n, j], j, :]
 
         x = x * scale_factors[1] + 0.5 * scale_factors[1] + dz[:, :, :, 0]
         y = y * scale_factors[0] + 0.5 * scale_factors[0] + dz[:, :, :, 1]
 
-        pose = torch.empty((batch_size, 1, num_joints, 3))
+        pose = torch.empty((batch_size, num_outputs, num_joints, 3))
         pose[:, :, :, 0] = x
         pose[:, :, :, 1] = y
         pose[:, :, :, 2] = dz[:, :, :, 2]
+
         return pose

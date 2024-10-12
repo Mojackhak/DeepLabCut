@@ -300,6 +300,7 @@ def analyze_videos(
     unique_bodyparts = model_cfg["metadata"]["unique_bodyparts"]
     individuals = model_cfg["metadata"]["individuals"]
     with_identity = model_cfg["metadata"]["with_identity"]
+    print(f'with_identity: {with_identity}')
     max_num_animals = len(individuals)
 
     if device is not None:
@@ -316,6 +317,7 @@ def analyze_videos(
                 "projects. Setting ``use_shelve=False``."
             )
             use_shelve = False
+    num_outputs = cfg.get("num_outputs", 1)
 
     snapshot = get_model_snapshots(snapshot_index, train_folder, pose_task)[0]
     print(f"Analyzing videos with {snapshot.path}")
@@ -356,6 +358,7 @@ def analyze_videos(
         detector_batch_size=detector_batch_size,
         detector_path=detector_path,
         detector_transform=None,
+        num_outputs=num_outputs
     )
 
     # Reading video and init variables
@@ -491,6 +494,19 @@ def create_df_from_prediction(
     bodyparts = model_cfg["metadata"]["bodyparts"]
     unique_bodyparts = model_cfg["metadata"]["unique_bodyparts"]
     individuals = model_cfg["metadata"]["individuals"]
+    print(f"Saving results in {output_h5} and {output_pkl}")
+    num_outputs = model_cfg.get("num_outputs", 1)
+    xyz_labs_orig = ["x", "y", "likelihood"]
+    suffix = [str(s + 1) for s in range(num_outputs)]
+    suffix[0] = ""
+    xyz_labs = [x + s for s in suffix for x in xyz_labs_orig]
+    cols = [
+        [dlc_scorer],
+        list(auxiliaryfunctions.get_bodyparts(model_cfg)),
+        xyz_labs,
+    ]
+    cols_names = ["scorer", "bodyparts", "coords"]
+    # individuals = model_cfg.get("individuals", ["animal"])
     n_individuals = len(individuals)
 
     print(f"Saving results in {output_h5} and {output_pkl}")
@@ -503,7 +519,8 @@ def create_df_from_prediction(
         cols_names.insert(1, "individuals")
 
     results_df_index = pd.MultiIndex.from_product(cols, names=cols_names)
-    pred_bodyparts = pred_bodyparts[:, :n_individuals]
+    pred_bodyparts = pred_bodyparts[:, :n_individuals*num_outputs]
+    pred_bodyparts = pred_bodyparts.transpose(0, 2, 1, 3)
     df = pd.DataFrame(
         pred_bodyparts.reshape((len(pred_bodyparts), -1)),
         columns=results_df_index,
