@@ -194,14 +194,16 @@ class InferenceRunner(Runner, Generic[ModelType], metaclass=ABCMeta):
 class PoseInferenceRunner(InferenceRunner[PoseModel]):
     """Runner for pose estimation inference"""
 
-    def __init__(self, model: PoseModel, **kwargs):
+    def __init__(self, model: PoseModel, num_outputs: int = 20, **kwargs):
         super().__init__(model, **kwargs)
+        self.num_outputs = num_outputs
 
     def predict(self, inputs: torch.Tensor) -> list[dict[str, dict[str, np.ndarray]]]:
         """Makes predictions from a model input and output
 
         Args:
             the inputs to the model, of shape (batch_size, ...)
+            num_outputs: the number of top values to get. Defaults to 20.
 
         Returns:
             predictions for each of the 'batch_size' inputs, made by each head, e.g.
@@ -213,7 +215,7 @@ class PoseInferenceRunner(InferenceRunner[PoseModel]):
             ]
         """
         outputs = self.model(inputs.to(self.device))
-        raw_predictions = self.model.get_predictions(outputs)
+        raw_predictions = self.model.get_predictions(outputs, num_outputs=self.num_outputs)
         predictions = [
             {
                 head: {
@@ -279,6 +281,7 @@ def build_inference_runner(
     batch_size: int = 1,
     preprocessor: Preprocessor | None = None,
     postprocessor: Postprocessor | None = None,
+    num_outputs: int = 20,
 ) -> InferenceRunner:
     """
     Build a runner object according to a pytorch configuration file
@@ -291,6 +294,7 @@ def build_inference_runner(
         batch_size: the batch size to use to run inference
         preprocessor: the preprocessor to use on images before inference
         postprocessor: the postprocessor to use on images after inference
+        num_outputs: the number of top values to get. Defaults to 20.
 
     Returns:
         the inference runner
@@ -306,4 +310,4 @@ def build_inference_runner(
     if task == Task.DETECT:
         return DetectorInferenceRunner(**kwargs)
 
-    return PoseInferenceRunner(**kwargs)
+    return PoseInferenceRunner(**kwargs, num_outputs=num_outputs)

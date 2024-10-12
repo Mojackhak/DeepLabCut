@@ -121,17 +121,18 @@ class PoseModel(nn.Module):
             for name, head in self.heads.items()
         }
 
-    def get_predictions(self, outputs: dict[str, dict[str, torch.Tensor]]) -> dict:
+    def get_predictions(self, outputs: dict[str, dict[str, torch.Tensor]], num_outputs: int = 20) -> dict:
         """Abstract method for the forward pass of the Predictor.
 
         Args:
             outputs: outputs of the model heads
+            num_outputs: Number of top values to get. Defaults to 20.
 
         Returns:
             A dictionary containing the predictions of each head group
         """
         return {
-            name: head.predictor(self._strides[name], outputs[name])
+            name: head.predictor(self._strides[name], outputs[name], num_outputs=num_outputs)
             for name, head in self.heads.items()
         }
 

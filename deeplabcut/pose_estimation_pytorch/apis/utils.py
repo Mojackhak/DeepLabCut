@@ -379,6 +379,7 @@ def get_inference_runners(
     detector_batch_size: int = 1,
     detector_path: str | Path | None = None,
     detector_transform: A.BaseCompose | None = None,
+    num_outputs: int = 20,
 ) -> tuple[InferenceRunner, InferenceRunner | None]:
     """Builds the runners for pose estimation
 
@@ -398,6 +399,7 @@ def get_inference_runners(
             for top-down models (if a detector runner is needed)
         detector_transform: the transform for object detection. if None, uses the
             transform defined in the config.
+        num_outputs: the number of top values to get. Defaults to 20.
 
     Returns:
         a runner for pose estimation
@@ -472,5 +474,6 @@ def get_inference_runners(
         batch_size=batch_size,
         preprocessor=pose_preprocessor,
         postprocessor=pose_postprocessor,
+        num_outputs=num_outputs
     )
     return pose_runner, detector_runner
