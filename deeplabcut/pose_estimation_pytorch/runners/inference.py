@@ -194,7 +194,7 @@ class InferenceRunner(Runner, Generic[ModelType], metaclass=ABCMeta):
 class PoseInferenceRunner(InferenceRunner[PoseModel]):
     """Runner for pose estimation inference"""
 
-    def __init__(self, model: PoseModel, num_outputs: int = 20, **kwargs):
+    def __init__(self, model: PoseModel, num_outputs: int = 1, **kwargs):
         super().__init__(model, **kwargs)
         self.num_outputs = num_outputs
 
@@ -203,7 +203,7 @@ class PoseInferenceRunner(InferenceRunner[PoseModel]):
 
         Args:
             the inputs to the model, of shape (batch_size, ...)
-            num_outputs: the number of top values to get. Defaults to 20.
+            num_outputs: the number of top values to get. Defaults to 1.
 
         Returns:
             predictions for each of the 'batch_size' inputs, made by each head, e.g.
@@ -281,7 +281,7 @@ def build_inference_runner(
     batch_size: int = 1,
     preprocessor: Preprocessor | None = None,
     postprocessor: Postprocessor | None = None,
-    num_outputs: int = 20,
+    num_outputs: int = 1,
 ) -> InferenceRunner:
     """
     Build a runner object according to a pytorch configuration file
@@ -294,7 +294,7 @@ def build_inference_runner(
         batch_size: the batch size to use to run inference
         preprocessor: the preprocessor to use on images before inference
         postprocessor: the postprocessor to use on images after inference
-        num_outputs: the number of top values to get. Defaults to 20.
+        num_outputs: the number of top values to get. Defaults to 1.
 
     Returns:
         the inference runner
