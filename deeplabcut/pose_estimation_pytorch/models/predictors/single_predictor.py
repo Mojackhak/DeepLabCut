@@ -56,14 +56,14 @@ class HeatmapPredictor(BasePredictor):
         self.locref_std = locref_std
 
     def forward(
-        self, stride: float, outputs: dict[str, torch.Tensor], num_outputs: int = 20
+        self, stride: float, outputs: dict[str, torch.Tensor], num_outputs: int = 1
     ) -> dict[str, torch.Tensor]:
         """Forward pass of SinglePredictor. Gets predictions from model output.
 
         Args:
             stride: the stride of the model
             outputs: output of the model heads (heatmap, locref)
-            num_outputs: Number of top values to get. Defaults to 20.
+            num_outputs: Number of top values to get. Defaults to 1.
 
         Returns:
             A dictionary containing a "poses" key with the output tensor as value.
@@ -99,13 +99,13 @@ class HeatmapPredictor(BasePredictor):
         return {"poses": poses}
 
     def get_top_values(
-        self, heatmap: torch.Tensor, n_top: int = 20
+        self, heatmap: torch.Tensor, n_top: int = 1
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Get the top values from the heatmap.
 
         Args:
             heatmap: Heatmap tensor.
-            n_top: Number of top values to get. Defaults to 20.
+            n_top: Number of top values to get. Defaults to 1.
 
         Returns:
             Y and X indices of the top values.
@@ -122,7 +122,7 @@ class HeatmapPredictor(BasePredictor):
         return y, x
 
     def get_pose_prediction(
-        self, heatmap: torch.Tensor, locref: torch.Tensor | None, scale_factors, num_outputs: int = 20
+        self, heatmap: torch.Tensor, locref: torch.Tensor | None, scale_factors, num_outputs: int = 1
     ) -> torch.Tensor:
         """Gets the pose prediction given the heatmaps and locref.
 
@@ -130,7 +130,7 @@ class HeatmapPredictor(BasePredictor):
             heatmap: Heatmap tensor with the following format (batch_size, height, width, num_joints)
             locref: Locref tensor with the following format (batch_size, height, width, num_joints, 2)
             scale_factors: Scale factors for the poses.
-            num_outputs: Number of top values to get. Defaults to 20.
+            num_outputs: Number of top values to get. Defaults to 1.
 
         Returns:
             Pose predictions of the format: (batch_size, num_people = 1, num_joints, 3)
