@@ -423,6 +423,7 @@ def analyze_videos(
                     create_df_from_prediction(
                         predictions=predictions,
                         multi_animal=multi_animal,
+                        cfg=cfg,
                         model_cfg=model_cfg,
                         dlc_scorer=dlc_scorer,
                         output_path=output_path,
@@ -474,6 +475,7 @@ def create_df_from_prediction(
     predictions: list[dict[str, np.ndarray]],
     dlc_scorer: str,
     multi_animal: bool,
+    cfg: dict,
     model_cfg: dict,
     output_path: str | Path,
     output_prefix: str | Path,
@@ -495,24 +497,21 @@ def create_df_from_prediction(
     unique_bodyparts = model_cfg["metadata"]["unique_bodyparts"]
     individuals = model_cfg["metadata"]["individuals"]
     print(f"Saving results in {output_h5} and {output_pkl}")
-    num_outputs = model_cfg.get("num_outputs", 1)
+    num_outputs = cfg.get("num_outputs", 1)
     xyz_labs_orig = ["x", "y", "likelihood"]
     suffix = [str(s + 1) for s in range(num_outputs)]
     suffix[0] = ""
     xyz_labs = [x + s for s in suffix for x in xyz_labs_orig]
     cols = [
         [dlc_scorer],
-        list(auxiliaryfunctions.get_bodyparts(model_cfg)),
+        list(auxiliaryfunctions.get_bodyparts(cfg)),
         xyz_labs,
     ]
     cols_names = ["scorer", "bodyparts", "coords"]
-    # individuals = model_cfg.get("individuals", ["animal"])
     n_individuals = len(individuals)
 
     print(f"Saving results in {output_h5} and {output_pkl}")
     coords = ["x", "y", "likelihood"]
-    cols = [[dlc_scorer], bodyparts, coords]
-    cols_names = ["scorer", "bodyparts", "coords"]
 
     if multi_animal:
         cols.insert(1, individuals)
