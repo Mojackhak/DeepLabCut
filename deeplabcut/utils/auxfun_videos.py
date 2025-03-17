@@ -269,7 +269,7 @@ class VideoWriter(VideoReader):
         command = (
             f'ffmpeg -n -i "{self.video_path}" -ss {start} -to {end} '
             # f'-c:a copy "{output_path}"'
-            f'  "{output_path}"
+            f'  "{output_path}"'
         )
         subprocess.call(command, shell=True)
         return output_path
