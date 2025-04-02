@@ -53,7 +53,7 @@ setuptools.setup(
     description="Markerless pose-estimation of user-defined features with deep learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/DeepLabCut/DeepLabCut",
+    url="https://github.com/Mojackhak/DeepLabCut",
     install_requires=[
         "albumentations<=1.4.3",
         "dlclibrary>=0.0.7",
