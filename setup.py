@@ -47,13 +47,17 @@ def pytorch_config_paths() -> list[str]:
 
 setuptools.setup(
     name="deeplabcut",
-    version="3.0.0rc61",
+    version="3.0.0rc61.post1",
     author="A. & M.W. Mathis Labs",
     author_email="alexander@deeplabcut.org",
-    description="Markerless pose-estimation of user-defined features with deep learning",
+    description="Mojackhak PyTorch fork of DeepLabCut for markerless pose estimation",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/Mojackhak/DeepLabCut",
+    project_urls={
+        "Repository": "https://github.com/Mojackhak/DeepLabCut",
+        "Upstream": "https://github.com/DeepLabCut/DeepLabCut",
+    },
     install_requires=[
         "albumentations<=1.4.3",
         "dlclibrary>=0.0.7",
